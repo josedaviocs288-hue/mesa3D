@@ -1,0 +1,23 @@
+{
+  "name": "mesa3d-atelier",
+  "version": "8.3.1",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.js",
+    "test": "node --test tests/*.test.js",
+    "test:local3d": "node --test tests/local-3d.test.js",
+    "check:local3d": "node tools/check-local-3d.mjs",
+    "test:3d": "node --test tests/glb.test.js tests/laboratorio.test.js",
+    "setup:local": "node tools/configurar-local.mjs"
+  },
+  "dependencies": {
+    "@google/model-viewer": "^4.1.0",
+    "express": "^5.1.0",
+    "multer": "^2.0.2",
+    "qrcode": "^1.5.4"
+  }
+}

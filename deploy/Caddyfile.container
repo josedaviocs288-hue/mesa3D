@@ -1,0 +1,7 @@
+{$MESA3D_DOMAIN} {
+  encode zstd gzip
+  reverse_proxy mesa3d:8080
+  header {
+    Strict-Transport-Security "max-age=31536000"
+  }
+}

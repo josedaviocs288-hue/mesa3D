@@ -1,0 +1,12 @@
+import {api,escapeHtml,money} from './common.js';
+const $=id=>document.getElementById(id);
+async function refresh(){
+  const [me,shops]=await Promise.all([api('/api/auth/me'),api('/api/owner/restaurants')]);
+  $('ownerEmail').textContent=me.email;$('ownerCount').textContent=`${shops.length} cadastrados`;
+  $('ownerShops').innerHTML=shops.length?shops.map(s=>`<article class="owner-shop"><div><span class="eyebrow">${escapeHtml(s.slug)}</span><h3>${escapeHtml(s.name)}</h3><p>${s.dishes} pratos · ${s.orders} pedidos · ${s.connected?'Pagamento conectado':'Pagamento pendente'}</p><small>${s.users.length?escapeHtml(s.users.join(', ')):'Administrado por você'} · ${s.lastBill?'Última mensalidade: '+escapeHtml(s.lastBill.status):'Sem mensalidade'}</small></div><div><a class="button mini terracotta" href="/studio.html?loja=${encodeURIComponent(s.slug)}">Gerenciar pratos ↗</a><a class="button mini outline" target="_blank" href="/?loja=${encodeURIComponent(s.slug)}">Cardápio ↗</a>${s.users.length?`<button data-reset="${escapeHtml(s.id)}" class="text-button">Trocar senha</button>`:''}</div></article>`).join(''):'<p>Nenhum restaurante cadastrado. Crie um abaixo para começar a cadastrar pratos.</p>';
+}
+$('createRestaurant').addEventListener('submit',async e=>{e.preventDefault();const form=e.currentTarget;try{const shop=await api('/api/owner/restaurants',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(form)))});location.href=`/studio.html?loja=${encodeURIComponent(shop.slug)}`}catch(error){$('ownerMessage').textContent=error.message}});
+$('ownerShops').addEventListener('click',async e=>{const b=e.target.closest('[data-reset]');if(!b)return;const password=prompt('Nova senha com pelo menos 12 caracteres:');if(!password)return;try{await api(`/api/owner/restaurants/${b.dataset.reset}/password`,{method:'POST',body:JSON.stringify({password})});$('ownerMessage').textContent='Senha atualizada; sessões antigas encerradas.'}catch(error){$('ownerMessage').textContent=error.message}});
+$('logoutOwner').addEventListener('click',async()=>{await api('/api/auth/logout',{method:'POST',body:'{}'});location.href='/acesso.html'});
+$('ownerPassword').addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/auth/password',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(e.currentTarget)))});e.currentTarget.reset();$('ownerMessage').textContent='Senha alterada.'}catch(error){$('ownerMessage').textContent=error.message}});
+refresh().catch(error=>{$('ownerMessage').textContent=error.message});

@@ -1,0 +1,13 @@
+node_modules
+.env
+.env.production
+runtime-data
+backups
+data
+test-data-*
+tools/bin
+*.log
+outputs
+work
+.git
+.codex

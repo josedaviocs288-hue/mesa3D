@@ -1,0 +1,22 @@
+[Unit]
+Description=Mesa3D Atelier
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mesa3d
+Group=mesa3d
+WorkingDirectory=/opt/mesa3d
+EnvironmentFile=/etc/mesa3d.env
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=5
+StateDirectory=mesa3d
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/mesa3d
+
+[Install]
+WantedBy=multi-user.target

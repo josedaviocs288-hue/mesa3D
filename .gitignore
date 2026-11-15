@@ -1,0 +1,57 @@
+node_modules/
+.env
+data/store.json
+data/uploads/*
+!data/uploads/.gitkeep
+data/test-*/
+data/*.sqlite*
+test-data-*/
+*.log
+tools/bin/
+.env.production
+runtime-data/
+backups/
+
+.mesa3d/
+ACESSO-LOCAL.txt
+data/servidor-*.log
+node_modules/
+.env
+.env.*
+!.env.example
+ACESSO-LOCAL.txt
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+*.log
+uploads/
+data/
+storage/
+
+# Dependências
+node_modules/
+
+# Senhas e configurações
+.env
+.env.*
+!.env.example
+ACESSO-LOCAL.txt
+*.pem
+*.key
+
+# Banco de dados
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+
+# Arquivos gerados
+uploads/
+storage/
+data/
+*.log
+.wrangler/

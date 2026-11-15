@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#172e29">
+  <title>Teste de câmera e escala · Mesa3D</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/vendor/model-viewer.min.js"></script>
+</head>
+<body class="camera-test-page">
+  <header class="viewer-header"><div class="shell header-inner"><a class="brand viewer-brand" href="/"><span class="brand-mark">M<span>³</span></span><span class="brand-word"><strong>Mesa3D</strong><small>Voltar ao cardápio</small></span></a><span class="viewer-header-label">TESTE NO CELULAR</span></div></header>
+  <main class="shell camera-test-layout">
+    <section class="camera-test-copy">
+      <span class="eyebrow"><span class="eyebrow-line"></span> ANTES DO PRATO REAL</span>
+      <h1>Confira a escala na sua mesa.</h1>
+      <p>Esta régua virtual mede exatamente <strong>10 cm de ponta a ponta</strong> no arquivo 3D. Use uma régua física ao lado para verificar como o seu aparelho posiciona o objeto.</p>
+      <ol class="camera-steps"><li>Abra no celular pelo link HTTPS do teste.</li><li>Aponte para uma mesa iluminada e mova o celular devagar.</li><li>Toque na mesa para posicionar a régua virtual.</li><li>Meça os 10 cm e caminhe ao redor para ver outros ângulos.</li></ol>
+      <button class="button terracotta" id="launchTest" disabled>Carregando régua 3D…</button>
+      <p id="cameraTestStatus" class="viewer-feedback" role="status">Preparando o modelo de referência.</p>
+      <p class="camera-test-note">O rastreamento pode variar conforme aparelho, iluminação e superfície. A régua confere a escala do aparelho; a fidelidade de um prato exige fotos e um modelo do alimento realmente servido.</p>
+      <a class="scale-test-link" href="/">Voltar aos pratos ↗</a>
+    </section>
+    <section class="camera-test-stage" aria-label="Régua 3D de dez centímetros">
+      <div class="viewer-stage-head"><span>REFERÊNCIA FÍSICA</span><span>10 × 2 cm</span></div>
+      <model-viewer id="scaleModel" src="/assets/regua-10cm.glb" loading="eager" interaction-prompt="none" camera-controls camera-orbit="30deg 65deg auto" camera-target="auto auto auto" field-of-view="30deg" environment-image="neutral" ar ar-modes="webxr scene-viewer quick-look" ar-scale="fixed" ar-placement="floor" xr-environment alt="Régua virtual de dez segmentos de um centímetro"><button slot="ar-button" class="native-ar">Projetar 10 cm na mesa ↗</button></model-viewer>
+      <div class="stage-bottom"><span>10 segmentos de 1 cm</span><span class="scale-badge">◉ escala fixa</span></div>
+    </section>
+  </main>
+  <script type="module" src="/teste-camera.js"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#17352e"><meta name="description" content="Um cardápio que mostra o prato em tamanho real antes de pedir.">
+  <title>Brasa & Raiz · Cardápio</title><link rel="stylesheet" href="/styles.css">
+</head>
+<body class="menu-page">
+  <header class="site-header"><div class="shell header-inner">
+    <a class="brand" href="/"><span class="brand-mark">M<span>³</span></span><span class="brand-word"><strong id="brandName">Brasa & Raiz</strong><small>cardápio em outra dimensão</small></span></a>
+    <nav class="top-links" aria-label="Navegação"><a href="#cardapio">Cardápio</a><a href="#como-funciona">Como funciona</a></nav>
+    <div class="header-actions"><button class="bag-button" id="openCart" type="button" aria-label="Abrir sacola">Sacola <span id="bagCount">0</span></button></div>
+  </div></header>
+  <main>
+    <section class="hero"><div class="shell hero-grid"><div class="hero-copy">
+      <span class="eyebrow light"><span class="eyebrow-line"></span> ESCOLHA COM OS OLHOS. DECIDA COM CERTEZA.</span>
+      <h1>O sabor começa <em>antes</em> do primeiro garfo.</h1>
+      <p id="heroIntro">Conheça o prato de perto, compare porções e veja como ele ocupa a sua mesa.</p>
+      <div class="hero-buttons"><a class="button cream" href="#cardapio">Explorar o cardápio <span>↗</span></a><a class="text-link light-link" href="#como-funciona">Descubra a experiência <span>↓</span></a></div>
+      <div class="hero-proof"><span class="proof-icon">◎</span><span><strong>Olhe além da foto.</strong> Pratos com modelo 3D podem ser vistos na câmera em escala cadastrada.</span></div>
+    </div><div class="hero-art" aria-label="Prato em destaque"><div class="hero-circle"></div><div class="hero-ring ring-one"></div><div class="hero-ring ring-two"></div><img id="heroDish" src="/assets/filet-demo.webp" alt="Prato em destaque" class="hero-dish"><div class="hero-art-note"><span class="note-line"></span><span>DA FOTO<br>À SUA MESA</span></div><div class="floating-stamp"><span>VEJA EM</span><strong>3D</strong><span>NA MESA</span></div></div></div></section>
+    <section class="utility-strip"><div class="shell utility-inner"><div><span class="utility-number">01</span><span>Escolha o prato</span></div><div><span class="utility-number">02</span><span>Compare porções</span></div><div><span class="utility-number">03</span><span>Veja em tamanho real</span></div><div class="utility-caption">Uma escolha mais clara, do primeiro olhar ao pedido.</div></div></section>
+    <section class="menu-section shell" id="cardapio"><div class="section-heading"><div><span class="eyebrow"><span class="eyebrow-line"></span> O CARDÁPIO</span><h2>Feito para <em>abrir o apetite.</em></h2><p>Fotos do prato, ingredientes e medidas da porção em um só lugar.</p></div><div class="restaurant-chip"><span class="dot"></span><span id="restaurantLabel">Brasa & Raiz</span></div></div>
+      <div class="menu-tools"><div class="search-field"><span>⌕</span><input id="search" type="search" placeholder="Procure um prato ou ingrediente" aria-label="Buscar pratos"></div><div class="category-list" id="categories"></div></div>
+      <div class="dish-grid" id="dishGrid"></div><div class="empty-state" id="emptyState" hidden><span>⌕</span><h3>Nenhum prato por aqui.</h3><p>Tente outra busca ou escolha uma categoria diferente.</p></div>
+    </section>
+    <section class="how-section" id="como-funciona"><div class="shell how-grid"><div class="how-title"><span class="eyebrow light"><span class="eyebrow-line"></span> COMO FUNCIONA</span><h2>Seu olho já sabe quando a porção é a certa.</h2><p>O restaurante informa o peso e mede largura, profundidade e altura de cada porção. O modelo 3D é ajustado a essas medidas para a visualização.</p></div><div class="how-cards"><article><span class="how-index">01 / ESCOLHA</span><h3>Encontre o que combina com sua fome.</h3><p>Leia os ingredientes, confira preço e tempo de preparo.</p></article><article><span class="how-index">02 / COMPARE</span><h3>100 g e 200 g são vistos lado a lado.</h3><p>Cada opção pode ter sua própria foto, medida e modelo 3D.</p></article><article><span class="how-index">03 / VISUALIZE</span><h3>Coloque o prato na sua mesa.</h3><p>Em aparelhos compatíveis, a câmera ancora o modelo no ambiente.</p></article></div></div></section>
+  </main>
+  <footer class="site-footer"><div class="shell footer-inner"><div><span class="footer-brand">MESA<span>³</span></span><p>Uma experiência à altura do prato.</p></div><span id="footerName"></span></div></footer>
+
+  <dialog id="dishDialog" class="dialog dish-dialog"><button class="dialog-close" data-close="dishDialog" aria-label="Fechar">×</button><div id="dishDetail"></div></dialog>
+  <dialog id="cartDialog" class="dialog cart-dialog"><button class="dialog-close" data-close="cartDialog" aria-label="Fechar">×</button><div class="cart-content"><span class="eyebrow"><span class="eyebrow-line"></span> SEU PEDIDO</span><h2>Sacola</h2><div id="cartItems"></div><div class="cart-total"><span>Total</span><strong id="cartTotal">R$ 0,00</strong></div><label class="field"><span>Seu nome</span><input id="customerName" required placeholder="Como podemos chamar você?"></label><label class="field"><span>Mesa ou comanda</span><input id="tableNumber" required placeholder="Ex.: Mesa 08"></label><label class="field"><span>Observações</span><textarea id="orderNotes" rows="2" placeholder="Alguma preferência para o preparo?"></textarea></label><button class="button terracotta full" id="sendOrder">Confirmar pedido · pagar na mesa <span>↗</span></button><button class="button outline full" id="payOnline" hidden>Pagar online <span>↗</span></button><p class="cart-note" id="cartNote">O pedido será enviado diretamente ao restaurante.</p></div></dialog>
+  <div class="toast" id="toast" role="status"></div>
+  <script type="module" src="/menu.js"></script>
+</body></html>

@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#172e29">
+  <title>Convite privado · Mesa3D</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="invite-page">
+  <header class="viewer-header"><div class="shell header-inner"><div class="brand viewer-brand"><span class="brand-mark">M<span>³</span></span><span class="brand-word"><strong>Mesa3D</strong><small>ATELIER</small></span></div><span class="viewer-header-label">ACESSO PRIVADO</span></div></header>
+  <main class="invite-layout shell">
+    <section class="invite-copy"><span class="eyebrow"><span class="eyebrow-line"></span> EXPERIÊNCIA EXCLUSIVA</span><h1>A mesa está pronta para você.</h1><p>Este é um teste privado do cardápio em 3D. Use o código enviado pelo responsável para entrar e descobrir os pratos na sua própria mesa.</p><div class="invite-detail"><span>01</span><p>Veja cada porção em 3D e compare suas dimensões.</p></div><div class="invite-detail"><span>02</span><p>Em celulares compatíveis, projete o prato na mesa e caminhe ao redor.</p></div></section>
+    <section class="invite-card" aria-labelledby="invite-title"><div class="invite-card-top">CONVITE PARA TESTE <span>↗</span></div><h2 id="invite-title">Entre com seu código.</h2><p>Peça o código à pessoa que enviou o link.</p><form id="inviteForm"><label for="inviteCode">CÓDIGO DE ACESSO</label><input id="inviteCode" name="code" type="password" autocomplete="one-time-code" required minlength="8" placeholder="Digite o código do convite"><button class="button terracotta" type="submit">Entrar no cardápio ↗</button></form><p id="inviteFeedback" class="viewer-feedback" role="status"></p><small>O acesso fica salvo neste navegador por 24 horas.</small></section>
+  </main>
+  <script type="module" src="/convite.js"></script>
+</body>
+</html>
