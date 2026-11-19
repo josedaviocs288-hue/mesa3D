@@ -1,10 +1,10 @@
+import {cartKey,readCart} from './cart.js';
 import {api,money,escapeHtml,toast,firstPhoto,portionPhoto,viewerUrl} from './common.js';
 
 let restaurant,dishes=[],category='Todos',search='',activeDish=null,activePortion=null,paymentAvailable=false;
-let cart=readCart();
+let cart=[];
 const $=id=>document.getElementById(id);
-function readCart(){try{return JSON.parse(localStorage.getItem('mesa3d-cart-v5'))||[]}catch{return []}}
-function saveCart(){localStorage.setItem('mesa3d-cart-v5',JSON.stringify(cart));renderCartCount()}
+function saveCart(){try{localStorage.setItem(cartKey(restaurant.slug),JSON.stringify(cart))}catch{}renderCartCount()}
 function renderCartCount(){$('bagCount').textContent=String(cart.reduce((n,x)=>n+x.qty,0))}
 
 async function init(){
@@ -17,7 +17,7 @@ async function init(){
     $('heroDish').closest('.hero-art').classList.toggle('uploaded-photo',!$('heroDish').src.includes('filet-demo.webp'));
     $('heroIntro').textContent=[restaurant.tagline,restaurant.intro].filter(Boolean).join(' ') || 'Conheça o prato de perto, compare porções e veja como ele ocupa a sua mesa.';
     document.title=`${restaurant.name} · Cardápio`;
-    cart=cart.filter(item=>dishes.some(d=>d.id===item.dishId&&d.portions.some(p=>p.id===item.portionId)));
+    cart=readCart(()=>localStorage,restaurant.slug).filter(item=>dishes.some(d=>d.id===item.dishId&&d.portions.some(p=>p.id===item.portionId)));
     saveCart();renderCategories();renderDishes();renderCartCount();
   }catch(e){toast(e.message);$('dishGrid').innerHTML='<div class="empty-state"><h3>Não foi possível abrir o cardápio.</h3><p>Atualize a página ou tente novamente em instantes.</p></div>'}
 }

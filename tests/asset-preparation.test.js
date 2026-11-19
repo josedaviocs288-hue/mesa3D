@@ -1,0 +1,35 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtemp,rm,readFile,writeFile,mkdir} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {prepareModelAssets,attachPreparedAssets} from '../tools/prepare-model-assets.mjs';
+import {getBounds,calibrateGlb} from '../glb.js';
+import {openPlatform} from '../platform.js';
+import {modelIdentity} from '../model-assets.js';
+import {unzipSync,strFromU8} from 'three/addons/libs/fflate.module.js';
+const fixturePath=fileURLToPath(new URL('../public/assets/filet-demo-optimized.glb',import.meta.url));
+test('preparedModelKeepsBounds; preparationFailureDoesNotPublish; staleIdentityRefusesAttach',async t=>{
+ const dir=await mkdtemp(path.join(tmpdir(),'mesa3d-prepare-'));let db;t.after(async()=>{db?.close();await rm(dir,{recursive:true,force:true,maxRetries:5,retryDelay:100})});
+ const dimensions={width:34,depth:20,height:3.1};const sourcePath=path.join(dir,'source.glb');
+ await writeFile(sourcePath,calibrateGlb(await readFile(fixturePath),dimensions,'z',true).buffer);
+ const prepared=await prepareModelAssets({sourcePath,dimensions,outputDir:dir});
+ assert.match(prepared.webUrl,/model-[a-f0-9]{64}\.glb$/);assert.match(prepared.iosUrl,/model-[a-f0-9]{64}\.usdz$/);
+ const usd=await readFile(path.join(dir,path.basename(prepared.iosUrl)));assert.equal(usd.readUInt32LE(0),0x04034b50);assert.match(usd.toString(),/metersPerUnit = 1/);
+ const files=unzipSync(usd);assert.ok(Object.keys(files).some(k=>k.endsWith('.png')));assert.ok(Object.entries(files).some(([k,v])=>k.endsWith('.usda')&&strFromU8(v).includes('def Mesh')));
+ db=openPlatform(dir);const portion={id:'p',modelUrl:'/media/source.glb',dimensions,upAxis:'y',modelStatus:'ready'};
+ db.prepare('INSERT INTO restaurants(id,slug,catalog,created_at) VALUES(?,?,?,?)').run('r','r',JSON.stringify({restaurant:{slug:'r'},dishes:[{id:'d',portions:[portion]}]}),'2026');
+ const identity=modelIdentity(portion.modelUrl,dimensions,'y');
+ assert.throws(()=>attachPreparedAssets({db,restaurantId:'r',dishId:'d',portionId:'p',identity:'stale',prepared}),/alterad/);
+ assert.equal(JSON.parse(db.prepare('SELECT catalog FROM restaurants WHERE id=?').get('r').catalog).dishes[0].portions[0].modelAssets,undefined);
+ await assert.rejects(prepareModelAssets({sourcePath:'does-not-exist.glb',dimensions,outputDir:dir}));
+ // Attachment checks the exact bytes currently on disk, not just a URL.
+ assert.throws(()=>attachPreparedAssets({db,restaurantId:'r',dishId:'d',portionId:'p',identity,prepared}),/origem|arquivo/i);
+ await mkdir(path.join(dir,'uploads'));for(const url of [prepared.webUrl,prepared.iosUrl])await writeFile(path.join(dir,'uploads',path.basename(url)),await readFile(path.join(dir,path.basename(url))));
+ await writeFile(path.join(dir,'uploads','source.glb'),await readFile(sourcePath));
+ attachPreparedAssets({db,dataDir:dir,restaurantId:'r',dishId:'d',portionId:'p',identity,prepared});
+ assert.equal(JSON.parse(db.prepare('SELECT catalog FROM restaurants WHERE id=?').get('r').catalog).dishes[0].portions[0].modelAssets.sourceSha256,prepared.sourceSha256);
+ await writeFile(path.join(dir,'uploads','source.glb'),'changed');
+ assert.throws(()=>attachPreparedAssets({db,dataDir:dir,restaurantId:'r',dishId:'d',portionId:'p',identity,prepared}),/origem alterado/);
+});

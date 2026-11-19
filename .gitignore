@@ -55,3 +55,11 @@ storage/
 data/
 *.log
 .wrangler/
+
+# Integração web PratoAR
+node_modules/
+data/
+test-data-*/
+*.sqlite*
+.env*
+!.env.example
