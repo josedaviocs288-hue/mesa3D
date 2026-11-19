@@ -1,11 +1,30 @@
+import {createViewerController} from './viewer-controller.js';
+import {browserCapabilities} from './ar-capabilities.js';
+import {ensureViewerLibrary} from './viewer-library.js';
 import {api,money,escapeHtml,toast,portionPhoto,publicUrl} from './common.js';
 
 const $=id=>document.getElementById(id);
 const params=new URLSearchParams(location.search);
-let restaurant,dish,selected,modelLoaded=false;
+let restaurant,dish,selected,controller,viewerReady=false,libraryLoading=false;
+
+async function loadViewer(){
+  if(viewerReady||libraryLoading)return;
+  libraryLoading=true;
+  $('viewerFeedback').textContent='Carregando visualizador 3D. A foto permanece disponível.';
+  try{
+    const Viewer=await ensureViewerLibrary();
+    Viewer.dracoDecoderLocation='/decoders/draco/';viewerReady=true;
+    controller.select(selected);renderComparison();
+  }catch{
+    $('viewerFeedback').textContent='O visualizador 3D não carregou. A foto permanece disponível; tente novamente.';
+    $('retryModel').hidden=false;
+  }finally{libraryLoading=false;}
+}
 
 async function init(){
   try{
+    controller=createViewerController({viewer:$('mainModel'),photo:$('photoPreview'),feedback:$('viewerFeedback'),retryButton:$('retryModel'),arButton:$('launchAR'),quickLookLink:$('quickLook'),detectCapabilities:()=>{const caps=browserCapabilities();return {...caps,webgl:viewerReady&&caps.webgl};}});
+    $('retryModel').addEventListener('click',()=>{if(!viewerReady)loadViewer()});
     const state=await api(`/api/state${params.get('loja')?'?loja='+encodeURIComponent(params.get('loja')):''}`);restaurant=state.restaurant;
     dish=state.dishes.find(x=>x.id===params.get('id')&&x.published);
     if(!dish || (params.get('loja')&&params.get('loja')!==restaurant.slug))throw new Error('Prato não encontrado neste cardápio.');
@@ -13,7 +32,7 @@ async function init(){
     $('viewRestaurant').textContent=restaurant.name;$('viewName').textContent=dish.name;$('viewDescription').textContent=dish.description;
     $('viewerBack').href=publicUrl(restaurant.slug);$('backToDish').href=publicUrl(restaurant.slug);
     document.title=`${dish.name} · Veja em 3D`;
-    render();renderComparison();
+    render();loadViewer();
   }catch(e){$('viewerFeedback').textContent=e.message;toast(e.message)}
 }
 function render(){
@@ -22,17 +41,11 @@ function render(){
   $('measureWidth').textContent=`${selected.dimensions.width} cm`;
   $('measureDepth').textContent=`${selected.dimensions.depth} cm`;
   $('measureHeight').textContent=`${selected.dimensions.height} cm`;
-  const ready=Boolean(selected.modelUrl&&selected.modelStatus==='ready');
-  $('mainModel').hidden=!ready;$('photoPreview').hidden=ready;
-  modelLoaded=false;
-  $('launchAR').disabled=true;
-  $('launchAR').textContent=ready?'Carregando 3D…':'Câmera indisponível';
-  $('viewStatus').textContent=ready?'ESCALA CADASTRADA':'APENAS FOTO';
-  $('viewerFeedback').textContent=selected.demo?'Demonstração ilustrativa: a forma e as medidas não representam um prato real.':ready?'Carregando o modelo. Depois aponte a câmera para uma mesa bem iluminada.':'Essa porção ainda não tem modelo 3D aprovado. O restaurante pode enviar um GLB ou gerar um a partir de fotos.';
-  if(ready){$('mainModel').src=selected.modelUrl;$('mainModel').alt=`Modelo 3D de ${dish.name}, porção ${selected.label}, ${selected.grams} gramas`;}
-  else $('previewImage').src=portionPhoto(selected);
+  $('viewStatus').textContent=selected.modelStatus==='ready'?'ESCALA CADASTRADA':'APENAS FOTO';
+  controller.select(selected);
 }
 function renderComparison(){
+  if(!viewerReady)return;
   const ready=dish.portions.filter(p=>p.modelUrl&&p.modelStatus==='ready');
   $('comparison').hidden=ready.length<2;
   if(ready.length<2)return;
@@ -42,36 +55,5 @@ document.addEventListener('click',event=>{
   const button=event.target.closest('[data-portion]');
   if(button){selected=dish.portions.find(p=>p.id===button.dataset.portion);render();const url=new URL(location.href);url.searchParams.set('porcao',selected.id);history.replaceState(null,'',url)}
 });
-$('mainModel').addEventListener('load',()=>{
-  if(!selected?.modelUrl || $('mainModel').getAttribute('src')!==selected.modelUrl)return;
-  modelLoaded=true;
-  $('launchAR').disabled=false;
-  $('launchAR').textContent='Abrir na câmera ↗';
-  $('viewerFeedback').textContent=selected.demo?'Demonstração ilustrativa. Teste a escala com a régua virtual de 10 cm antes de avaliar um prato real.':'3D pronto. Na câmera, toque na mesa para posicionar e caminhe ao redor para ver outros ângulos.';
-});
-$('launchAR').addEventListener('click',()=>{
-  if(!selected?.modelUrl||!modelLoaded)return;
-  const viewer=$('mainModel');
-  if(!window.isSecureContext && location.hostname!=='localhost'){
-    $('viewerFeedback').textContent='A câmera AR exige HTTPS. Abra o link público seguro no celular.';
-    return;
-  }
-  if(viewer.canActivateAR){
-    $('viewerFeedback').textContent='Buscando uma superfície horizontal. Aponte para a mesa, mova o celular lentamente e toque para posicionar.';
-    // The browser's user gesture must reach activateAR without an await first.
-    try{Promise.resolve(viewer.activateAR()).catch(()=>{$('viewerFeedback').textContent='Não foi possível iniciar a câmera AR neste aparelho.'})}
-    catch{$('viewerFeedback').textContent='Não foi possível iniciar a câmera AR neste aparelho.'}
-    return;
-  }
-  $('viewerFeedback').textContent='AR indisponível neste navegador ou aparelho. A visualização 3D acima continua disponível.';
-  toast('AR indisponível neste aparelho.');
-});
-$('mainModel').addEventListener('ar-status',event=>{
-  const status=event.detail?.status;
-  if(status==='session-started')$('viewerFeedback').textContent='Aponte a câmera para a mesa e toque na superfície para posicionar o prato.';
-  if(status==='object-placed')$('viewerFeedback').textContent='Prato posicionado. Mova o celular ao redor da mesa para ver todos os lados; o tamanho fica fixo.';
-  if(status==='failed')$('viewerFeedback').textContent='A câmera AR não iniciou. Verifique as permissões e tente outro navegador compatível.';
-});
-$('mainModel').addEventListener('ar-tracking',event=>{if(event.detail?.status==='not-tracking')$('viewerFeedback').textContent='Rastreamento perdido. Ilumine a mesa, aponte para uma textura visível e mova o celular devagar.'});
-$('mainModel').addEventListener('error',()=>{modelLoaded=false;$('launchAR').disabled=true;$('launchAR').textContent='Modelo indisponível';$('viewerFeedback').textContent='O modelo 3D não carregou. Peça ao restaurante para reenviar este arquivo.'});
+window.addEventListener('pagehide',event=>{if(!event.persisted)controller?.destroy()});
 init();

@@ -8,16 +8,22 @@
   },
   "scripts": {
     "start": "node --env-file-if-exists=.env server.js",
-    "test": "node --test tests/*.test.js",
-    "test:local3d": "node --test tests/local-3d.test.js",
-    "check:local3d": "node tools/check-local-3d.mjs",
-    "test:3d": "node --test tests/glb.test.js tests/laboratorio.test.js",
-    "setup:local": "node tools/configurar-local.mjs"
+    "test": "node --test tests/asset-preparation.test.js tests/browser-fallbacks.test.js tests/glb.test.js tests/laboratorio.test.js tests/model-assets.test.js tests/model-delivery.test.js tests/server.test.js tests/viewer-controller.test.js tests/web-policy.test.js tests/web-runtime.test.js",
+    "test:3d": "node --test tests/glb.test.js tests/laboratorio.test.js"
   },
   "dependencies": {
     "@google/model-viewer": "^4.1.0",
     "express": "^5.1.0",
     "multer": "^2.0.2",
     "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
+    "@napi-rs/canvas": "^1.0.1",
+    "draco3dgltf": "^1.5.7",
+    "sharp": "^0.35.5",
+    "three": "^0.183.2"
   }
 }

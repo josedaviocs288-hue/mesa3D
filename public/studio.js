@@ -72,12 +72,7 @@ function renderEditorPortions(portions){
     const p=portions[i];addAxisSelector(card,p.upAxis||'auto');
     const status=p.modelStatus==='ready'?'3D aprovado':p.modelStatus==='review'?'3D para revisar':p.photos?.length?'Fotos salvas · falta modelo 3D':'Comece pelas fotos e medidas';
     card.querySelector('.portion-head').insertAdjacentHTML('beforeend',`<span class="portion-progress">${status}</span>`);
-    if(!state.capabilities.meshyConfigured)card.querySelector('.generate-button').textContent='Geração por API opcional (não configurada)';
-    const link=document.createElement('a');link.className='generate-button';
-    link.textContent='Criar GLB local com 20–80 fotos (sem API) ↗';
-    if(editing?.id){const qs=new URLSearchParams({dishId:editing.id,portionId:p.id});if(ownerShop)qs.set('loja',ownerShop);link.href='/laboratorio-3d.html?'+qs.toString()}
-    else{link.href='#';link.addEventListener('click',ev=>{ev.preventDefault();toast('Salve o prato e depois abra novamente para gerar o 3D local.')})}
-    card.querySelector('.generate-button').after(link);
+    if(!state.capabilities.meshyConfigured)card.querySelector('.generate-button').hidden=true;
     if(p.modelStatus==='review'&&p.modelUrl)card.querySelector('.generate-button').insertAdjacentHTML('afterend',`<button type="button" class="generate-button" data-review="${escapeHtml(p.id)}">Revisar e aprovar modelo ↗</button>`);
   });
 }

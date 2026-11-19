@@ -1,3 +1,4 @@
+import {publicDish,invalidateModelAssets,modelIdentity} from './model-assets.js';
 import express from 'express';
 import multer from 'multer';
 import QRCode from 'qrcode';
@@ -7,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { calibrateGlb, inspectGlb } from './glb.js';
-import { Local3D, nativeStatus } from './local-3d.js';
+import {getFeatures, reconstructionDisabled} from './features.js';
 import { openPlatform, hashPassword, verifyPassword, randomId, tokenHash, createSession, encrypt, decrypt } from './platform.js';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
@@ -18,14 +19,11 @@ const publicDir = path.join(root,'public');
 const app = express();
 const port = Number(process.env.PORT || 8080);
 const host = process.env.HOST || '127.0.0.1';
-const meshyKey = process.env.MESHY_API_KEY || '';
+
 const photoUpload = multer({storage:multer.memoryStorage(),limits:{fileSize:18*1024*1024,files:4}});
 const modelUpload = multer({storage:multer.memoryStorage(),limits:{fileSize:60*1024*1024,files:1}});
 const uid = () => crypto.randomUUID();
 const db=openPlatform(dataDir);
-const local3d=new Local3D(dataDir);
-const reconTemp=path.join(dataDir,'reconstrucoes-temp');
-const reconUpload=multer({dest:reconTemp,limits:{fileSize:12*1024*1024,files:80,parts:90}});
 const requestStore=new AsyncLocalStorage();
 const active=()=>{const value=requestStore.getStore();if(!value)throw new Error('Restaurante não selecionado.');return value.catalog};
 const activeShop=()=>requestStore.getStore().shop;
@@ -64,7 +62,7 @@ function publicState() {
   return {
     restaurant:active().restaurant,
     dishes:active().dishes,
-    capabilities:{meshyConfigured:Boolean(meshyKey),local3d:true,localOnly:host==='127.0.0.1'}
+    capabilities:getFeatures()
   };
 }
 function locate(dishId,portionId) {
@@ -217,14 +215,21 @@ app.get('/owner.html',(req,res)=>{
 app.use('/media',express.static(uploadDir,{setHeaders:(res,file)=>{
   res.setHeader('X-Content-Type-Options','nosniff');
   if (file.endsWith('.glb')) res.setHeader('Content-Type','model/gltf-binary');
+  if (file.endsWith('.usdz')) res.setHeader('Content-Type','model/vnd.usdz+zip');
+  res.setHeader('Cache-Control',/^model-[a-f0-9]{64}\.(glb|usdz)$/.test(path.basename(file))?'public, max-age=31536000, immutable':'public, max-age=0, must-revalidate');
 }}));
 app.get('/vendor/model-viewer.min.js',(req,res)=>res.sendFile(path.join(root,'node_modules','@google','model-viewer','dist','model-viewer.min.js')));
+app.get('/cardapio/:slug',(req,res)=>{
+  if(!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(req.params.slug))return res.sendStatus(404);
+  res.redirect('/?loja='+encodeURIComponent(req.params.slug));
+});
+app.get(['/cardapio/:slug/:id','/cardapio/:slug/:id/{*rest}'],(req,res)=>res.status(404).sendFile(path.join(publicDir,'cardapio-legado.html')));
 app.use(express.static(publicDir));
 
 app.get('/api/state',publicContext,(req,res)=>res.json({
   restaurant:active().restaurant,
-  dishes:active().dishes.filter(d=>d.published).map(d=>({...d,portions:d.portions.map(p=>({...p,modelUrl:p.modelStatus==='ready'?p.modelUrl:'',modelSource:undefined,jobId:undefined}))})),
-  capabilities:{payments:Boolean(activeShop().mp_credentials)}
+  dishes:active().dishes.filter(d=>d.published).map(publicDish),
+  capabilities:{...getFeatures(),payments:Boolean(activeShop().mp_credentials && process.env.MP_CLIENT_ID && process.env.MP_CLIENT_SECRET)}
 }));
 // Laboratório 3D: análise sem gravar mídia nem alterar o restaurante.
 app.post('/api/lab/analyze',requireUser,modelUpload.single('model'),(req,res,next)=>{try{
@@ -245,63 +250,8 @@ app.post('/api/lab/analyze',requireUser,modelUpload.single('model'),(req,res,nex
   res.json(response);
 }catch(error){next(error)}});
 
-// Processo local: COLMAP + OpenMVS. Todas as etapas podem ser iniciadas no navegador.
-app.get('/api/local3d/status',requireUser,(req,res)=>res.json(nativeStatus()));
-app.get('/api/local3d/jobs',requireUser,(req,res)=>res.json([...local3d.jobs.values()].filter(job=>local3d.get(job.id,req.user)).map(job=>local3d.public(job)).sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,30)));
-app.post('/api/local3d/jobs',requireUser,shopContext,async(req,res,next)=>{
-  // Primeiro verifica as ferramentas para nao transferir centenas de MB a toa.
-  const status=nativeStatus();
-  if(!status.ready)return res.status(409).json({error:'Instale as ferramentas locais antes de gerar 3D: '+Object.entries(status.tools).filter(([,ok])=>!ok).map(([name])=>name).join(', ')});
-  next();
-},reconUpload.array('photos',80),async(req,res,next)=>{
-  try{
-    const dishId=safeText(req.body?.dishId,80),portionId=safeText(req.body?.portionId,80);
-    if(Boolean(dishId)!==Boolean(portionId))throw new Error('Informe prato e porcao juntos.');
-    if(dishId)locate(dishId,portionId);
-    const job=await local3d.create({files:req.files,user:req.user,restaurantId:activeShop().id,dishId,portionId});
-    res.status(202).json(job);
-  }catch(e){next(e)}finally{for(const f of req.files||[])await fs.unlink(f.path).catch(()=>{})}
-});
-app.get('/api/local3d/jobs/:id',requireUser,(req,res)=>{
-  const job=local3d.get(req.params.id,req.user);
-  if(!job)return res.status(404).json({error:'Reconstrucao nao encontrada.'});
-  res.json(local3d.public(job));
-});
-app.get('/api/local3d/jobs/:id/glb',requireUser,async(req,res,next)=>{
-  try{
-    const job=local3d.get(req.params.id,req.user);
-    if(!job)return res.status(404).json({error:'Reconstrucao nao encontrada.'});
-    const result=await local3d.resultFile(job);
-    if(req.query.baixar==='1')res.download(result,`mesa3d-${job.id}.glb`);
-    else res.type('model/gltf-binary').sendFile(result);
-  }catch(e){next(e)}
-});
-app.post('/api/local3d/jobs/:id/attach',requireUser,shopContext,async(req,res,next)=>{
-  try{
-    const job=local3d.get(req.params.id,req.user);
-    if(!job)return res.status(404).json({error:'Reconstrucao nao encontrada.'});
-    if(job.restaurantId!==activeShop().id)throw new Error('Este modelo pertence a outro restaurante.');
-    if(!job.dishId||!job.portionId)throw new Error('Esta reconstrucao nao foi vinculada a um prato. Baixe o GLB e envie pelo estúdio.');
-    const {portion}=locate(job.dishId,job.portionId);
-    const source=await fs.readFile(await local3d.resultFile(job));
-    const calibrated=calibrateGlb(source,portion.dimensions,portion.upAxis,true);
-    const report=mobileModelReport(source,calibrated);
-    const photos=await fs.readdir(path.join(local3d.base,job.id,'images'));
-    if(!photos.length)throw new Error('Fotos de referencia nao encontradas.');
-    const savedPhotos=[];
-    for(const filename of photos.slice(0,4)){
-      const ext=path.extname(filename).slice(1);
-      savedPhotos.push(await saveMedia(await fs.readFile(path.join(local3d.base,job.id,'images',filename)),ext));
-    }
-    portion.photos=savedPhotos;
-    portion.modelSource=await saveMedia(source,'glb');
-    portion.modelUrl=await saveMedia(calibrated.buffer,'glb');
-    portion.modelStatus='review';portion.modelReport=report;portion.jobId='';portion.demo=false;
-    delete portion.reviewedAt;delete portion.reviewedBy;
-    await writeStore();
-    res.json({ok:true,modelUrl:portion.modelUrl,modelStatus:portion.modelStatus,report});
-  }catch(e){next(e)}
-});
+app.get('/api/local3d/status',requireUser,(req,res)=>res.json({ready:false,enabled:false}));
+app.use('/api/local3d',requireUser,reconstructionDisabled);
 app.get('/api/manage/state',requireUser,shopContext,(req,res)=>res.json(publicState()));
 app.use('/api/restaurant',requireUser,shopContext);
 app.use('/api/dishes',requireUser,shopContext);
@@ -327,7 +277,7 @@ app.post('/api/dishes',async(req,res,next)=>{try{
     const dims={width:number(raw.dimensions?.width,3,150,'Largura'),depth:number(raw.dimensions?.depth,3,150,'Profundidade'),height:number(raw.dimensions?.height,0.5,100,'Altura')};
     const upAxis=['auto','y','z'].includes(raw.upAxis)?raw.upAxis:'auto';
     const portion={id,label:safeText(raw.label,50)||'Porção',grams:number(raw.grams,1,10000,'Peso'),price:number(raw.price,0,100000,'Preço'),dimensions:dims,upAxis,
-      photos:old?.photos || [],modelSource:old?.modelSource || '',modelUrl:old?.modelUrl || '',modelStatus:old?.modelStatus || 'missing',modelReport:old?.modelReport || null,jobId:old?.jobId || '',demo:old?.demo || false};
+      modelAssets:old?.modelAssets,reviewedAt:old?.reviewedAt,reviewedBy:old?.reviewedBy,photos:old?.photos || [],modelSource:old?.modelSource || '',modelUrl:old?.modelUrl || '',modelStatus:old?.modelStatus || 'missing',modelReport:old?.modelReport || null,jobId:old?.jobId || '',demo:old?.demo || false};
     if (portion.modelSource && (JSON.stringify(dims)!==JSON.stringify(old?.dimensions) || upAxis!==old?.upAxis)) {
       const filename=mediaFilename(portion.modelSource);
       const source=filename ? await fs.readFile(path.join(uploadDir,filename)) : await fs.readFile(path.join(publicDir,portion.modelSource.replace(/^\//,'')));
@@ -335,6 +285,7 @@ app.post('/api/dishes',async(req,res,next)=>{try{
       if(!portion.demo)portion.modelReport=mobileModelReport(source,calibrated);
       portion.modelUrl=await saveMedia(calibrated.buffer,'glb');
       portion.modelStatus=portion.demo?'ready':'review';
+      invalidateModelAssets(portion);
     }
     portions.push(portion);
   }
@@ -361,7 +312,7 @@ app.post('/api/dishes/:dishId/portions/:portionId/photos',photoUpload.array('pho
   }
   const previous=[...portion.photos,portion.modelSource,portion.modelUrl];
   portion.photos=photos; portion.modelSource=''; portion.modelUrl=''; portion.modelStatus='missing'; portion.modelReport=null; portion.jobId=''; portion.demo=false;
-  delete portion.reviewedAt;delete portion.reviewedBy;
+  invalidateModelAssets(portion);
   await writeStore(); res.json(portion);
   for(const url of previous)await removeMedia(url);
 }catch(e){next(e)}});
@@ -373,55 +324,11 @@ app.post('/api/dishes/:dishId/portions/:portionId/model',modelUpload.single('mod
   portion.modelSource=await saveMedia(req.file.buffer,'glb');
   portion.modelUrl=await saveMedia(calibrated.buffer,'glb');
   portion.modelStatus='review'; portion.modelReport=report; portion.jobId=''; portion.demo=false;
-  delete portion.reviewedAt;delete portion.reviewedBy;
+  invalidateModelAssets(portion);
   await writeStore(); res.json({portion,nativeSize:calibrated.nativeSize,report});
 }catch(e){next(e)}});
-app.post('/api/dishes/:dishId/portions/:portionId/generate',async(req,res,next)=>{try{
-  if (!meshyKey) return res.status(409).json({error:'Defina MESHY_API_KEY no servidor para gerar um modelo a partir das fotos.'});
-  const {portion}=locate(req.params.dishId,req.params.portionId);
-  if (portion.photos.length<2 || portion.photos.length>4 || portion.photos.some(p=>!mediaFilename(p))) throw new Error('Envie de duas a quatro fotos JPG/PNG da mesma porção.');
-  const image_urls=[];
-  for (const url of portion.photos) {
-    const filename=mediaFilename(url), mime=filename.endsWith('.png')?'image/png':'image/jpeg';
-    image_urls.push(`data:${mime};base64,${(await fs.readFile(path.join(uploadDir,filename))).toString('base64')}`);
-  }
-  const response=await fetch('https://api.meshy.ai/openapi/v1/multi-image-to-3d',{method:'POST',headers:{Authorization:`Bearer ${meshyKey}`,'Content-Type':'application/json'},body:JSON.stringify({image_urls,ai_model:'meshy-7.1',geometry_resolution:'2k',should_texture:true,enable_pbr:true,should_remesh:true,topology:'triangle',target_polycount:80000,texture_resolution:'2k',target_formats:['glb']}),signal:AbortSignal.timeout(120000)});
-  const payload=await response.json();
-  if (!response.ok || !payload.result) throw new Error(payload.message || payload.error || `Serviço 3D respondeu ${response.status}.`);
-  portion.jobId=payload.result; portion.modelStatus='processing';
-  await writeStore(); res.json({status:'processing',jobId:portion.jobId});
-}catch(e){next(e)}});
-app.get('/api/dishes/:dishId/portions/:portionId/job',async(req,res,next)=>{try{
-  const {portion}=locate(req.params.dishId,req.params.portionId);
-  if (!portion.jobId) return res.json({status:portion.modelStatus});
-  if (!meshyKey) throw new Error('Chave do serviço 3D não configurada.');
-  const response=await fetch(`https://api.meshy.ai/openapi/v1/multi-image-to-3d/${encodeURIComponent(portion.jobId)}`,{headers:{Authorization:`Bearer ${meshyKey}`},signal:AbortSignal.timeout(30000)});
-  const payload=await response.json();
-  if (!response.ok) throw new Error(payload.message || `Falha ao verificar geração: ${response.status}.`);
-  if (payload.status==='SUCCEEDED' && portion.modelStatus!=='ready') {
-    try{
-      const url=new URL(payload.model_urls?.glb || '');
-      if (url.protocol!=='https:' || !url.hostname.endsWith('.meshy.ai')) throw new Error('Endereço do modelo gerado não é confiável.');
-      const modelResponse=await fetch(url,{signal:AbortSignal.timeout(120000)});
-      if (!modelResponse.ok) throw new Error('Não foi possível baixar o modelo gerado.');
-      const source=Buffer.from(await modelResponse.arrayBuffer());
-      if (source.length>60*1024*1024) throw new Error('Modelo gerado excedeu 60 MB.');
-      const calibrated=calibrateGlb(source,portion.dimensions,portion.upAxis,true);
-      portion.modelReport=mobileModelReport(source,calibrated);
-      portion.modelSource=await saveMedia(source,'glb');
-      portion.modelUrl=await saveMedia(calibrated.buffer,'glb');
-      portion.modelStatus='review';
-      portion.jobId='';
-      delete portion.reviewedAt;delete portion.reviewedBy;
-    }catch(error){
-      portion.modelStatus='failed';portion.jobId='';
-      await writeStore();
-      return res.json({status:'failed',error:error.message});
-    }
-  } else if (payload.status==='FAILED' || payload.status==='EXPIRED') portion.modelStatus='failed';
-  await writeStore();
-  res.json({status:portion.modelStatus,progress:payload.progress || 0,error:payload.task_error?.message || '',modelUrl:portion.modelUrl});
-}catch(e){next(e)}});
+app.post('/api/dishes/:dishId/portions/:portionId/generate',reconstructionDisabled);
+app.get('/api/dishes/:dishId/portions/:portionId/job',reconstructionDisabled);
 app.post('/api/dishes/:dishId/portions/:portionId/approve',async(req,res,next)=>{try{
   const {portion}=locate(req.params.dishId,req.params.portionId);
   if(portion.modelStatus!=='review' || !portion.modelUrl)throw new Error('Não há modelo aguardando revisão.');
@@ -634,8 +541,6 @@ app.use((err,req,res,next)=>{
 });
 
 await initStore();
-await fs.mkdir(reconTemp,{recursive:true});
-await local3d.init();
 if(!db.prepare("SELECT id FROM users WHERE role='owner' LIMIT 1").get()){
   const email=String(process.env.OWNER_EMAIL||'').toLowerCase();
   const password=process.env.OWNER_PASSWORD;
