@@ -55,3 +55,19 @@ storage/
 data/
 *.log
 .wrangler/
+
+# Integração web PratoAR
+node_modules/
+data/
+test-data-*/
+*.sqlite*
+.env*
+!.env.example
+
+# Python e reconstrução privada
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+reconstruction-private/
+reconstruction-acceptance.json

@@ -1,0 +1,7 @@
+{
+  "colmap": {"repository":"https://github.com/colmap/colmap","tag":"3.13.0","sha":"0b31f98133b470eae62811b557dc2bcff1e4f9a5"},
+  "openmvs": {"repository":"https://github.com/cdcseacave/openMVS","tag":"v2.4.0","sha":"58117204c86bbb11a0b25b26a8987676cf11274d"},
+  "vcglib": {"repository":"https://github.com/cnr-isti-vclab/vcglib","sha":"5cae2abc2f9056785b0537dcbe156c40da2aea20"},
+  "mobilesam": {"repository":"https://github.com/ChaoningZhang/MobileSAM","sha":"f706ad9c4eb7f219c00d9050e46328518ffb65d2","weightsSha256":"6dbb90523a35330fedd7f1d3dfc66f995213d81b29a5ca8108dbcdd4e37d6c2f","archiveSha256":"bdcd4f3fa3b906d502439f6694a5e29b3faaf3f3a768d1c2f4633e0c7e71c4e9","license":"Apache-2.0"},
+  "runtimeStatus":"linux-sandbox-research-validated; physical-scale-and-production-auth-pending"
+}
