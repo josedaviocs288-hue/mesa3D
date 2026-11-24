@@ -57,3 +57,7 @@ O conteúdo de `web/` deste workspace ocupa a raiz do repositório Mesa3D. O mot
 - [Proposta de afiliados](PROPOSTA-AFILIADOS.md)
 - [Backend antes da inclusão da fila](BACKEND-ESTADO-2026-11-23.md)
 - [PR para revisão do dono](https://github.com/josedaviocs288-hue/mesa3D/pull/1)
+
+## Configuração encontrada no upstream
+
+A branch main recebeu um arquivo .env rastreado antes desta atualização. O PR remove seu rastreamento, sem exibir seu conteúdo. Isso não apaga o histórico remoto; o dono deve revisar privadamente se havia credenciais reais e substituí-las se necessário.

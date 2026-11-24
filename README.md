@@ -77,4 +77,3 @@ Câmera, rastreamento e escala precisam de testes em iPhone e Android físicos. 
 - [Avisos dos componentes do motor](worker-3d/THIRD_PARTY_NOTICES.md)
 
 Neste workspace, o produto está em `web/` e o motor opcional em `worker-3d/`. No repositório Mesa3D, o conteúdo de `web/` fica na raiz. `frontend/`, `desktop/` e `backend/` são legado preservado, fora da execução ativa. Respeitar as licenças e avisos dos componentes de terceiros.
-

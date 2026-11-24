@@ -1,6 +1,6 @@
 # Proposta de programa de afiliados — Mesa3D
 
-**Documento para aprovação · 19 de novembro de 2026**  
+**Documento para aprovação · 19 de novembro de 2026**
 **Status:** proposta inicial. Nenhum percentual, compromisso de pagamento ou regra comercial foi ativado.
 
 ## 1. Objetivo
@@ -165,7 +165,7 @@ O piloto estará pronto para avaliação quando:
 | Grupo inicial de afiliados | ________________________________________ |
 | Observações e condições de aprovação | ________________________________________ |
 
-**Aprovado por:** ______________________________  
+**Aprovado por:** ______________________________
 **Data:** ____ / ____ / ______
 
 **Próximo passo após aprovação:** fechar as regras selecionadas e elaborar a especificação técnica. A aprovação desta proposta não ativa pagamentos nem autoriza promessas de comissão antes da definição dos termos.

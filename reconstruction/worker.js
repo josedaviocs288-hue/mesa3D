@@ -82,4 +82,3 @@ export async function runWorkerCycle({store,dataDir,getReadiness=()=>readiness({
  if(!status.ready)return {...status,processed:false};
  return {...status,processed:await runWorkerOnce({store,dataDir,...options})};
 }
-

@@ -1,43 +1,15 @@
-# Motor 3D próprio
+# Motor opcional de reconstrução por fotos
 
-## Integração Mesa3D no servidor
+Este diretório contém o pipeline Python e o adaptador usado pelo worker do servidor Mesa3D. Não é um instalador para o computador do restaurante.
 
-A entrada atual para geração no servidor Mesa3D é `scripts/mesa3d-job.py`, chamada pelo worker Node em `web/tools/reconstruction-worker.mjs`. Consulte [operação da geração no servidor](../docs/GERACAO-3D-SERVIDOR.md). Não usa o cliente Supabase nem instala motor no computador do restaurante. Continua desativada até validar o host e seu runtime. As seções abaixo documentam executores/pilotos anteriores, não a ativação automática desta integração.
+A integração permanece desativada até validar um host Linux gratuito, seu runtime e uma captura real. Consulte [GERACAO-3D-SERVIDOR.md](../docs/GERACAO-3D-SERVIDOR.md) para pré-requisitos, diagnóstico, configuração e aceite.
 
-O executor local do restaurante usa uma distribuição WSL 2 dedicada e o
-pacote de `distribution/build-runtime.sh`. Consulte o
-[manual do Windows](../docs/MOTOR-3D-CLIENTE-WINDOWS.md) para instalação,
-homologação, atualização e revogação. A geração continua desativada enquanto
-o pacote e o ambiente real aguardam homologação.
+## Componentes
 
-## Piloto legado
+- `scripts/mesa3d-job.py`: preflight, manifesto, captura e execução do pipeline.
+- `app/pipeline/`: validação de fotos e etapas de reconstrução/exportação.
+- `sources.lock.json` e `requirements*.lock`: versões e dependências do motor. Instalar pacotes Python não instala por si só COLMAP, OpenMVS, Blender ou o sandbox necessários.
+- `tests/`: testes de fotos, adaptador e regressões; não homologam fotogrametria pesada.
+- [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md): avisos e licenças dos componentes, incluindo requisitos próprios de distribuição.
 
-Pipeline implementado para FFmpeg → COLMAP → OpenMVS → preparação/exportação em Blender.
-**O runtime foi construído no Vercel Sandbox e gerou GLB texturizado real.
-O recorte ainda não foi aceito visualmente; o Dockerfile permanece sem build.**
-Os testes de unidade não comprovam fidelidade do prato. Operação remota permanece
-desabilitada até validação e disponibilidade de host.
-
-Consulte `docs/RECONSTRUCAO-OPERACAO.md` na raiz para implantação, licenças e limites.
-O processo de trabalho é `python -m app.runner`; a API FastAPI abaixo serve apenas
-para healthcheck. Os antigos jobs em memória retornam 410.
-
-Para executar:
-
-```bash
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8001
-```
-
-API em `http://localhost:8001/docs`.
-
-## Etapas da reconstrução
-
-1. Armazenar vídeo original em bucket privado com URL assinada.
-2. Extrair frames e validar qualidade da captura.
-3. Realizar reconstrução 3D (avaliar fotogrametria/NeRF/Gaussian splatting + conversão para mesh).
-4. Limpar malha, reduzir polígonos, gerar textura e exportar GLB.
-5. Calibrar escala com medida conhecida e comparar o resultado ao prato real.
-6. Entregar a prévia e o resultado à API de controle autenticada.
-
-Nem todo prato admite reconstrução automática de qualidade. Prever revisão humana e possibilidade de regravação.
+O site Node e o worker ficam na raiz do repositório. O caminho do pipeline pode ser definido explicitamente com `MESA3D_PIPELINE_ROOT`. Não usar o cliente Supabase antigo nem iniciar serviços pagos para completar a configuração.
