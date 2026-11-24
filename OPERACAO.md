@@ -37,4 +37,7 @@ A ferramenta rejeita GLB com recursos externos e não baixa modelos pela rede. O
 
 ## Testes e implantação
 
+A integração de geração por fotos no servidor está preparada, mas desativada por padrão. Consulte [operação da geração](docs/GERACAO-3D-SERVIDOR.md) para runtime, fila SQLite, fotos privadas, revisão, diagnóstico e teste de entrega HTTPS. `npm run worker:diagnose` verifica a configuração; `npm run worker` inicia o processo separado somente no ambiente validado.
+
 `npm test` executa testes upstream pertinentes e regressões da integração com dados temporários. `npm audit` verifica dependências. Não há compilação Next.js nesta aplicação; o runtime é JavaScript ESM em Node. Hospedagem requer processo Node e disco persistente; hospedagem gratuita pública continua pendente de validação. O frontend Vercel antigo não muda ao executar este projeto localmente.
+

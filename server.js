@@ -1,3 +1,6 @@
+import {publicOrigin as validatePublicOrigin} from './reconstruction/origin.js';
+import {ReconstructionStore} from './reconstruction/store.js';
+import {createReconstructionRouter} from './reconstruction/routes.js';
 import {publicDish,invalidateModelAssets,modelIdentity} from './model-assets.js';
 import express from 'express';
 import multer from 'multer';
@@ -19,11 +22,13 @@ const publicDir = path.join(root,'public');
 const app = express();
 const port = Number(process.env.PORT || 8080);
 const host = process.env.HOST || '127.0.0.1';
+const configuredPublicOrigin=process.env.MESA3D_PUBLIC_ORIGIN?validatePublicOrigin(process.env.MESA3D_PUBLIC_ORIGIN):null;
 
 const photoUpload = multer({storage:multer.memoryStorage(),limits:{fileSize:18*1024*1024,files:4}});
 const modelUpload = multer({storage:multer.memoryStorage(),limits:{fileSize:60*1024*1024,files:1}});
 const uid = () => crypto.randomUUID();
 const db=openPlatform(dataDir);
+const reconstructionStore=new ReconstructionStore(db);
 const requestStore=new AsyncLocalStorage();
 const active=()=>{const value=requestStore.getStore();if(!value)throw new Error('Restaurante não selecionado.');return value.catalog};
 const activeShop=()=>requestStore.getStore().shop;
@@ -250,6 +255,7 @@ app.post('/api/lab/analyze',requireUser,modelUpload.single('model'),(req,res,nex
   res.json(response);
 }catch(error){next(error)}});
 
+app.use('/api/reconstruction',createReconstructionRouter({db,store:reconstructionStore,dataDir,requireUser,shopContext,getShop:()=>activeShop(),getCatalog:()=>active()}));
 app.get('/api/local3d/status',requireUser,(req,res)=>res.json({ready:false,enabled:false}));
 app.use('/api/local3d',requireUser,reconstructionDisabled);
 app.get('/api/manage/state',requireUser,shopContext,(req,res)=>res.json(publicState()));
@@ -339,6 +345,7 @@ app.post('/api/dishes/:dishId/portions/:portionId/approve',async(req,res,next)=>
 }catch(e){next(e)}});
 app.get('/api/qr.svg',async(req,res,next)=>{try{
   const url=new URL(String(req.query.url || ''));
+  if(configuredPublicOrigin&&url.origin!==configuredPublicOrigin)throw new Error('Use o domínio público configurado para o QR Code.');
   if (!['http:','https:'].includes(url.protocol) || url.href.length>500) throw new Error('Link inválido.');
   res.type('image/svg+xml').send(await QRCode.toString(url.href,{type:'svg',margin:1,width:320,color:{dark:'#18352e',light:'#fffaf1'}}));
 }catch(e){next(e)}});

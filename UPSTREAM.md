@@ -7,4 +7,4 @@ Importados: server.js, platform.js, glb.js, local-3d.js (retirado do runtime na 
 
 Testes de instaladores e motor local não integram esta aplicação web. Manter cobertura upstream de servidor, GLB e laboratório. Recursos de recuperação/AR e preparação são adaptados do PratoAR; dependências e assets conservam seus avisos próprios. Não reutilizar modelos externos sem seus créditos e licença.
 
-No PR para o repositório Mesa3D, o conteúdo de web/ foi aplicado à raiz; README de operação em OPERACAO.md. Testes históricos de instaladores/motor local ficam fora do script npm test ativo.
+No repositório Mesa3D, web/ corresponde à raiz e o manual é OPERACAO.md. O caminho padrão do worker Python foi adaptado para worker-3d/ na raiz; nenhuma função do motor foi alterada nessa adaptação.

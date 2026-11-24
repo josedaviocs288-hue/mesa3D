@@ -8,8 +8,11 @@
   },
   "scripts": {
     "start": "node --env-file-if-exists=.env server.js",
-    "test": "node --test tests/asset-preparation.test.js tests/browser-fallbacks.test.js tests/glb.test.js tests/laboratorio.test.js tests/model-assets.test.js tests/model-delivery.test.js tests/server.test.js tests/viewer-controller.test.js tests/web-policy.test.js tests/web-runtime.test.js",
-    "test:3d": "node --test tests/glb.test.js tests/laboratorio.test.js"
+    "test": "node --test --test-concurrency=1 tests/asset-preparation.test.js tests/browser-fallbacks.test.js tests/glb.test.js tests/laboratorio.test.js tests/model-assets.test.js tests/model-delivery.test.js tests/model-server-readiness.test.js tests/reconstruction-http.test.js tests/reconstruction-store.test.js tests/reconstruction-worker.test.js tests/server.test.js tests/viewer-controller.test.js tests/web-policy.test.js tests/web-runtime.test.js",
+    "test:3d": "node --test tests/glb.test.js tests/laboratorio.test.js",
+    "worker": "node --env-file-if-exists=.env tools/reconstruction-worker.mjs",
+    "worker:diagnose": "node --env-file-if-exists=.env tools/reconstruction-worker.mjs --diagnose",
+    "check:delivery": "node tools/check-model-delivery.mjs"
   },
   "dependencies": {
     "@google/model-viewer": "^4.1.0",

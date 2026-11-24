@@ -1,5 +1,3 @@
-> Neste repositório Mesa3D, os arquivos descritos como `web/` no workspace PratoAR estão na raiz. Execute `npm ci`, `npm start`, `npm test` e `npm audit` na raiz. Configuração: `OPERACAO.md`. Spec/plano preservam os caminhos do workspace original como registro.
-
 # Integração Mesa3D — operação e evidências
 
 Data: 19/11/2026. Código de origem Mesa3D em `web/UPSTREAM.md`. Especificação e plano aprovados em `docs/superpowers/`.
@@ -51,3 +49,5 @@ URLs e QR Mesa3D são preservados. `/cardapio/{slug}` aponta ao menu corresponde
 ## Hospedagem
 
 Nenhuma implantação foi feita. É necessário um servidor Node com disco persistente e HTTPS. Não usar SQLite no filesystem efêmero das funções Vercel. Hospedagem gratuita disponível à conta ainda precisa ser validada. Executar localmente não atualiza o domínio Vercel antigo.
+
+Nota de distribuição: os caminhos web/ deste documento correspondem à raiz do repositório Mesa3D; o manual local é OPERACAO.md.

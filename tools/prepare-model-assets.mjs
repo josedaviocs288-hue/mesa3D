@@ -69,9 +69,10 @@ export async function prepareModelAssets({sourcePath,dimensions,outputDir}){
  const webUrl=await atomicWrite(outputDir,web,'glb');const iosUrl=await atomicWrite(outputDir,ios,'usdz');
  return {sourceSha256:hash(source),webUrl,iosUrl,credits:'Origem: modelo da porção. Variante web com Draco e texturas de cor recomprimidas; USDZ exportado pelo Three.js. Créditos originais preservados no catálogo. '+[...new Set(changes)].join(' ')};
 }
-export function attachPreparedAssets({db,restaurantId,dishId,portionId,identity,prepared,dataDir}){
+export function attachPreparedAssets({db,restaurantId,dishId,portionId,identity,prepared,dataDir,assertLease}){
  db.exec('BEGIN IMMEDIATE');
  try{
+  assertLease?.();
   const row=db.prepare('SELECT catalog FROM restaurants WHERE id=?').get(restaurantId);const catalog=row&&JSON.parse(row.catalog);
   const portion=catalog?.dishes.find(d=>d.id===dishId)?.portions.find(p=>p.id===portionId);
   if(!portion||portion.modelStatus!=='ready'||modelIdentity(portion.modelUrl,portion.dimensions,portion.upAxis)!==identity)throw new Error('Modelo ou medidas alterados durante preparação.');
